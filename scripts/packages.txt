@@ -1,0 +1,38 @@
+# Packages removed by debloat.sh and brought back by restore.sh.
+# Delete a line (or put # in front of it) to keep that app.
+
+# Telia / GET operator software
+no.get.tv.androidtv.launcher             Telia home screen (replaced by Volt Launcher)
+no.get.tv.androidtv.live                 Telia live TV app
+no.get.tv.androidtv.setup                Telia setup wizard
+
+# Sagemcom (box manufacturer)
+com.sagemcom.sgcanalyticsagent           Usage analytics / telemetry
+com.sagemcom.ota                         Operator firmware updates
+com.sagemcom.ota.apkinstaller            Operator-pushed app installs
+android.autoinstalls.config.sagemcom.device  Auto-installs operator apps
+com.sagemcom.stb.nightmaintenance        Nightly maintenance / reboot jobs
+com.sagemcom.stb.tvinput                 Operator TV input
+com.sagemcom.stb.partnerinterface        Operator integration
+
+# Google extras (Play Services and Play Store are kept, streaming apps need them)
+com.google.android.tvrecommendations     Recommendation rows
+com.google.android.backdrop              Ambient screensaver
+com.google.android.feedback              Feedback reporter
+com.google.android.play.games            Play Games
+com.google.android.videos                Play Movies & TV
+com.google.android.youtube.tvmusic       YouTube Music
+com.google.android.katniss               Google Assistant / voice search (the button is reused for the quick menu)
+com.google.android.partnersetup          Partner setup
+com.google.android.marvin.talkback       TalkBack screen reader
+com.google.android.tts                   Text-to-speech
+com.google.android.syncadapters.calendar Calendar sync
+com.google.android.onetimeinitializer    First-boot initializer
+com.google.android.tv.remote.service     Phone remote service
+com.google.android.apps.mediashell       Chromecast built-in (delete this line if you cast to the box)
+
+# Android extras
+com.android.printspooler                 Printing
+com.android.hotspot2.osulogin            Hotspot 2.0 login
+com.android.providers.calendar           Calendar storage
+com.android.dynsystem                    Dynamic system updates

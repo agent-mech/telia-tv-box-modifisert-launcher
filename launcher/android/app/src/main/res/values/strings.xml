@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="remote_key_service_label">Volt Launcher remote buttons</string>
+    <string name="remote_key_service_description">Lets Volt Launcher remap buttons on the remote. It only looks at button presses and nothing leaves the TV.</string>
+</resources>

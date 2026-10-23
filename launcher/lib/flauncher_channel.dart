@@ -1,0 +1,99 @@
+/*
+ * FLauncher
+ * Copyright (C) 2021  Étienne Fesser
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+import 'dart:async';
+
+import 'package:flutter/services.dart';
+
+class FLauncherChannel {
+  static const _methodChannel = MethodChannel('me.efesser.flauncher/method');
+  static const _appsEventChannel = EventChannel('me.efesser.flauncher/event_apps');
+  static const _networkEventChannel = EventChannel('me.efesser.flauncher/event_network');
+
+  Future<List<Map<dynamic, dynamic>>> getApplications() async {
+    List<Map<dynamic, dynamic>>? applications = await _methodChannel.invokeListMethod("getApplications");
+    return applications!;
+  }
+
+  Future<Uint8List> getApplicationBanner(String packageName) async {
+    Uint8List bytes = await _methodChannel.invokeMethod("getApplicationBanner", packageName);
+    return bytes;
+  }
+
+  Future<Uint8List> getApplicationIcon(String packageName) async {
+    Uint8List bytes = await _methodChannel.invokeMethod("getApplicationIcon", packageName);
+    return bytes;
+  }
+
+  Future<bool> applicationExists(String packageName) async =>
+      await _methodChannel.invokeMethod('applicationExists', packageName);
+
+  Future<void> launchActivityFromAction(String action) async => await _methodChannel.invokeMethod('launchActivityFromAction', action);
+
+  Future<void> launchApp(String packageName) async => await _methodChannel.invokeMethod('launchApp', packageName);
+
+  Future<void> openSettings() async => await _methodChannel.invokeMethod('openSettings');
+
+  Future<void> openAppInfo(String packageName) async => await _methodChannel.invokeMethod('openAppInfo', packageName);
+
+  Future<void> uninstallApp(String packageName) async => await _methodChannel.invokeMethod('uninstallApp', packageName);
+
+  Future<bool> isDefaultLauncher() async => await _methodChannel.invokeMethod('isDefaultLauncher');
+
+  Future<bool> isPasscodeSet() async => await _methodChannel.invokeMethod('isPasscodeSet');
+
+  Future<void> setPasscode() async => await _methodChannel.invokeMethod('setPasscode');
+
+  Future<void> removePasscode() async => await _methodChannel.invokeMethod('removePasscode');
+
+  Future<void> lockNow() async => await _methodChannel.invokeMethod('lockNow');
+
+  Future<bool> isRemoteServiceRunning() async => await _methodChannel.invokeMethod('isRemoteServiceRunning');
+
+  Future<void> openAccessibilitySettings() async => await _methodChannel.invokeMethod('openAccessibilitySettings');
+
+  /// Waits for the next remote button press; null if the remote buttons service is off.
+  Future<({int code, String name})?> captureRemoteKey() async {
+    Map<dynamic, dynamic>? key = await _methodChannel.invokeMapMethod('captureRemoteKey');
+    return key == null ? null : (code: key['code'] as int, name: key['name'] as String);
+  }
+
+  Future<void> cancelRemoteKeyCapture() async => await _methodChannel.invokeMethod('cancelRemoteKeyCapture');
+
+  Future<bool> checkForGetContentAvailability() async =>
+      await _methodChannel.invokeMethod("checkForGetContentAvailability");
+
+  Future<Map<String, dynamic>> getActiveNetworkInformation() async {
+    Map<dynamic, dynamic> map = await _methodChannel.invokeMethod("getActiveNetworkInformation");
+    return map.cast<String, dynamic>();
+  }
+
+  Future<void> startAmbientMode() async => await _methodChannel.invokeMethod("startAmbientMode");
+
+  void addAppsChangedListener(void Function(Map<String, dynamic>) listener) =>
+      _appsEventChannel.receiveBroadcastStream().listen((event) {
+        Map<dynamic, dynamic> eventMap = event;
+        listener(eventMap.cast<String, dynamic>());
+      });
+
+  void addNetworkChangedListener(void Function(Map<String, dynamic>) listener) =>
+      _networkEventChannel.receiveBroadcastStream().listen((event) {
+        Map<dynamic, dynamic> eventMap = event;
+        listener(eventMap.cast<String, dynamic>());
+      });
+}
