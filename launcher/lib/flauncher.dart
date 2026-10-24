@@ -56,7 +56,7 @@ class FLauncher extends StatelessWidget {
             backgroundColor: Colors.transparent,
             appBar: FocusAwareAppBar(),
             body: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: const EdgeInsets.fromLTRB(32, 16, 32, 0),
               child: Consumer<AppsService>(
                 builder: (context, appsService, _) {
                   if (appsService.initialized) {
@@ -85,8 +85,21 @@ class FLauncher extends StatelessWidget {
     )
   );
 
-  Widget _sections(List<LauncherSection> sections) => Column(
-    children: sections.map((section) {
+  Widget _sections(List<LauncherSection> sections) {
+    // Desktop apps only show in desktop mode: hide their group and drop them from other rows too
+    final desktopApps = {
+      ...KNOWN_DESKTOP_APPS,
+      ...sections
+          .whereType<Category>()
+          .where((category) => category.name == DESKTOP_CATEGORY_NAME)
+          .expand((category) => category.applications)
+          .map((app) => app.packageName),
+    };
+
+    return Column(
+    children: sections
+        .where((section) => !(section is Category && section.name == DESKTOP_CATEGORY_NAME))
+        .map((section) {
       final Key sectionKey = Key(section.id.toString());
       final Widget categoryWidget;
 
@@ -95,18 +108,21 @@ class FLauncher extends StatelessWidget {
       }
 
       Category category = section as Category;
+      final applications = category.applications
+          .where((app) => !desktopApps.contains(app.packageName))
+          .toList();
       switch (category.type) {
         case CategoryType.row:
           categoryWidget = CategoryRow(
               key: sectionKey,
               category: category,
-              applications: category.applications
+              applications: applications
           );
         case CategoryType.grid:
           categoryWidget = AppsGrid(
               key: sectionKey,
               category: category,
-              applications: category.applications
+              applications: applications
           );
       }
 
@@ -115,7 +131,8 @@ class FLauncher extends StatelessWidget {
         child: categoryWidget
       );
     }).toList(),
-  );
+    );
+  }
 
   Widget _wallpaper(BuildContext context, WallpaperService wallpaperService) {
     if (wallpaperService.wallpaper != null) {

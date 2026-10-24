@@ -50,6 +50,19 @@ class LauncherSection
   });
 }
 
+/// Apps in this group only show in desktop mode (see FLauncher._sections and DesktopLauncher).
+const String DESKTOP_CATEGORY_NAME = "Desktop apps";
+
+/// Always treated as desktop apps, even if they also register a TV launcher entry
+const Set<String> KNOWN_DESKTOP_APPS = {
+  "org.chromium.chrome",
+};
+
+bool isDesktopApp(String packageName, Iterable<LauncherSection> sections) =>
+    KNOWN_DESKTOP_APPS.contains(packageName) ||
+    sections.any((section) => section is Category && section.name == DESKTOP_CATEGORY_NAME
+        && section.applications.any((app) => app.packageName == packageName));
+
 class Category extends LauncherSection
 {
   static const int          ColumnsCount  = 6;

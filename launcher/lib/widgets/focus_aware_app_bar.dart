@@ -48,36 +48,15 @@ class _FocusAwareAppBarState extends State<FocusAwareAppBar>
       },
       child: AppBar(
         actions: [
-          IconButton(
-            padding: const EdgeInsets.all(2),
-            constraints: const BoxConstraints(),
-            splashRadius: 20,
-            tooltip: "Lock TV",
-            icon: const Icon(Icons.lock_outline,
-              shadows: [
-                Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2))
-              ],
-            ),
-            onPressed: () => FLauncherChannel().lockNow(),
-            focusColor: Theme.of(context).primaryColorLight,
-          ),
-          const SizedBox(width: 16),
-          IconButton(
-            padding: const EdgeInsets.all(2),
-            constraints: const BoxConstraints(),
-            splashRadius: 20,
-            icon: const Icon(Icons.settings_outlined,
-              shadows: [
-                Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2))
-              ],
-            ),
-            onPressed: () => showDialog(context: context, builder: (_) => const SettingsPanel()),
-            // sometime after Flutter 3.7.5, no later than 3.16.8, the focus highlight went away
-            focusColor: Theme.of(context).primaryColorLight,
-          ),
+          _barButton(context, Icons.memory, "Free up RAM", () => FLauncherChannel().freeRam()),
+          const SizedBox(width: 6),
+          _barButton(context, Icons.lock_outline, "Lock TV", () => FLauncherChannel().lockNow()),
+          const SizedBox(width: 6),
+          _barButton(context, Icons.settings_outlined, "Settings",
+              () => showDialog(context: context, builder: (_) => const SettingsPanel())),
           const Padding(
             padding: EdgeInsets.only(left: 16),
-            child: NetworkWidget(),
+            child: IconTheme(data: IconThemeData(size: 18), child: NetworkWidget()),
           ),
           Padding(
             padding: const EdgeInsets.only(left: 16, right: 32),
@@ -131,4 +110,23 @@ class _FocusAwareAppBarState extends State<FocusAwareAppBar>
       )
     );
   }
+
+  Widget _barButton(BuildContext context, IconData icon, String tooltip, VoidCallback onPressed) => IconButton(
+    tooltip: tooltip,
+    onPressed: onPressed,
+    icon: Icon(icon, size: 15),
+    style: ButtonStyle(
+      fixedSize: const WidgetStatePropertyAll(Size(28, 28)),
+      // IconButton otherwise keeps a 40 minimum size and 8 padding
+      minimumSize: const WidgetStatePropertyAll(Size(28, 28)),
+      padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      shape: const WidgetStatePropertyAll(CircleBorder()),
+      backgroundColor: WidgetStateProperty.resolveWith((states) =>
+          states.contains(WidgetState.focused) ? Colors.white : Colors.black.withOpacity(0.25)),
+      foregroundColor: WidgetStateProperty.resolveWith((states) =>
+          states.contains(WidgetState.focused) ? Colors.black : Colors.white),
+      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+    ),
+  );
 }

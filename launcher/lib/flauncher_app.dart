@@ -19,6 +19,7 @@
 import 'package:flauncher/actions.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/launcher_state.dart';
+import 'package:flauncher/providers/settings_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,7 +27,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
-import 'flauncher.dart';
+import 'launcher_home.dart';
 
 class FLauncherApp extends StatelessWidget
 {
@@ -96,10 +97,24 @@ class FLauncherApp extends StatelessWidget
           selectionHandleColor: _swatch[200],
         ),
       ),
+      // Keeps everything, dialogs included, inside the screen margins for TVs that crop the edges
+      builder: (context, child) => Selector<SettingsService, double>(
+        selector: (_, settings) => settings.screenMargin,
+        builder: (context, margin, _) {
+          final size = MediaQuery.sizeOf(context);
+          return ColoredBox(
+            color: Colors.black,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: size.width * margin, vertical: size.height * margin),
+              child: MediaQuery.removePadding(context: context, child: child!),
+            ),
+          );
+        },
+      ),
       home: Builder(
         builder: (context) => PopScope(
           canPop: false,
-          child: FLauncher(),
+          child: const LauncherHome(),
           onPopInvoked: (didPop) {
             LauncherState launcherState = context.read<LauncherState>();
             launcherState.handleBackNavigation(context);

@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flauncher/widgets/settings/gradient_panel_page.dart';
+import 'package:flauncher/widgets/settings/wallpaper_images_panel_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -47,29 +47,12 @@ class WallpaperPanelPage extends StatelessWidget {
           TextButton(
             child: Row(
               children: [
-                Icon(Icons.insert_drive_file_outlined),
+                Icon(Icons.image_outlined),
                 Container(width: 8),
-                Text(localizations.picture, style: Theme.of(context).textTheme.bodyMedium),
+                Text("Images", style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
-            onPressed: () async {
-              try {
-                await context.read<WallpaperService>().pickWallpaper();
-              } on NoFileExplorerException {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    duration: Duration(seconds: 8),
-                    content: Row(
-                      children: [
-                        Icon(Icons.error_outline, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text(localizations.dialogTextNoFileExplorer)
-                      ],
-                    ),
-                  ),
-                );
-              }
-            },
+            onPressed: () => Navigator.of(context).pushNamed(WallpaperImagesPanelPage.routeName),
           ),
         ],
       );

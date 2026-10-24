@@ -30,11 +30,13 @@ class QuickMenuPanelPage extends StatelessWidget {
     ("action:home", "Home", Icons.home_outlined),
     ("action:settings", "Settings", Icons.settings_outlined),
     ("action:wifi", "Wi-Fi", Icons.wifi),
-    ("action:bluetooth", "Bluetooth", Icons.bluetooth),
+    ("action:bluetooth", "Remotes & accessories", Icons.bluetooth),
     ("action:display", "Display & sound", Icons.tv),
     ("action:apps", "Manage apps", Icons.apps),
     ("action:screensaver", "Screensaver", Icons.nightlight_outlined),
     ("action:lock", "Lock TV", Icons.lock_outline),
+    ("action:toggle_layout", "Switch TV / desktop", Icons.desktop_windows_outlined),
+    ("action:free_ram", "Free up RAM", Icons.memory),
   ];
 
   @override

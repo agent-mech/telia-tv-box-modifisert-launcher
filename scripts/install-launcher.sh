@@ -19,6 +19,9 @@ adb install -r "$2"
 adb shell cmd package set-home-activity "$PACKAGE/me.efesser.flauncher.MainActivity"
 adb shell cmd role add-role-holder android.app.role.ASSISTANT "$PACKAGE"
 adb shell appops set "$PACKAGE" SYSTEM_ALERT_WINDOW allow
+# Desktop mode switches to an invisible keyboard; the TV settings page changes text size and screensaver delay
+adb shell pm grant "$PACKAGE" android.permission.WRITE_SECURE_SETTINGS
+adb shell appops set "$PACKAGE" WRITE_SETTINGS allow
 
 # Remote button remapping (an accessibility service that only looks at key presses).
 # Appended to any services that are already on instead of replacing them.

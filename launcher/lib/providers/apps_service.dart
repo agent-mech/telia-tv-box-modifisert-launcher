@@ -30,6 +30,8 @@ import 'package:tuple/tuple.dart';
 import '../models/app.dart';
 import '../models/category.dart';
 
+const Set<String> SYSTEM_SETTINGS_PACKAGES = {"com.android.tv.settings", "com.android.settings"};
+
 class AppsService extends ChangeNotifier
 {
   final FLauncherChannel _fLauncherChannel;
@@ -58,6 +60,16 @@ class AppsService extends ChangeNotifier
     await _refreshState(shouldNotifyListeners: false);
     if (_database.wasCreated) {
       await _initDefaultCategories();
+    }
+
+    // The old "Non-TV Applications" row becomes the desktop-only group
+    if (!_categoriesById.values.any((category) => category.name == DESKTOP_CATEGORY_NAME)) {
+      for (final category in _categoriesById.values.toList()) {
+        if (category.name == "Non-TV Applications") {
+          await renameCategory(category, DESKTOP_CATEGORY_NAME);
+          break;
+        }
+      }
     }
 
     _fLauncherChannel.addAppsChangedListener((event) async {
@@ -139,7 +151,7 @@ class AppsService extends ChangeNotifier
         }
       }
       if (nonTvApplications.isNotEmpty) {
-        int categoryId = await addCategory("Non-TV Applications",
+        int categoryId = await addCategory(DESKTOP_CATEGORY_NAME,
           type: CategoryType.grid, shouldNotifyListeners: false,
         );
         Category nonTvAppsCategory = _categoriesById[categoryId]!;
@@ -155,10 +167,11 @@ class AppsService extends ChangeNotifier
     Future<List<AppCategory>> appsCategoriesFuture = _database.getAppsCategories();
     Future<List<Category>> categoriesFuture = _database.getCategories();
     Future<List<LauncherSpacer>> spacersFuture = _database.getLauncherSpacers();
-    // Don't show the launcher itself on its own home screen
-    String ownPackageName = (await PackageInfo.fromPlatform()).packageName;
+    // Don't show the launcher itself on its own home screen, nor Android's settings app:
+    // the launcher's settings include the TV settings
+    final hiddenPackages = {(await PackageInfo.fromPlatform()).packageName, ...SYSTEM_SETTINGS_PACKAGES};
     List<Map<dynamic, dynamic>> appsFromSystem = (await _fLauncherChannel.getApplications())
-        .where((app) => app['packageName'] != ownPackageName)
+        .where((app) => !hiddenPackages.contains(app['packageName']))
         .toList();
     Iterable<MapEntry<String, Tuple2<Map, AppsCompanion>>> appEntries = appsFromSystem.map(
             (appFromSystem) => new MapEntry(appFromSystem['packageName'], Tuple2(appFromSystem, _buildAppCompanion(appFromSystem))));
@@ -202,7 +215,7 @@ class AppsService extends ChangeNotifier
     _launcherSections.sort((ls0, ls1) => ls0.order.compareTo(ls1.order));
 
     for (App application in _applications.values) {
-      if (application.packageName == ownPackageName) {
+      if (hiddenPackages.contains(application.packageName)) {
         continue;
       }
 
@@ -259,10 +272,12 @@ class AppsService extends ChangeNotifier
     return _fLauncherChannel.getApplicationIcon(packageName);
   }
 
-  Future<void> launchApp(App app) {
+  Future<void> launchApp(App app, {bool windowed = false}) {
     Future<void> future;
     if (app.action == null) {
-      future = _fLauncherChannel.launchApp(app.packageName);
+      future = windowed
+          ? _fLauncherChannel.launchAppWindowed(app.packageName)
+          : _fLauncherChannel.launchApp(app.packageName);
     }
     else {
       future = _fLauncherChannel.launchActivityFromAction(app.action!);
@@ -308,7 +323,7 @@ class AppsService extends ChangeNotifier
       return;
     }
 
-    String defaultName = app.sideloaded ? "Non-TV Applications" : "TV Applications";
+    String defaultName = app.sideloaded ? DESKTOP_CATEGORY_NAME : "TV Applications";
     Category category = _categoriesById.values.firstWhere(
         (category) => category.name == defaultName,
         orElse: () => _categoriesById.values.first);

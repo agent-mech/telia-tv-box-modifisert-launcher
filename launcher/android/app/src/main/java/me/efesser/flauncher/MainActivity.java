@@ -58,6 +58,12 @@ public class MainActivity extends FlutterActivity
     private final String METHOD_CHANNEL = "me.efesser.flauncher/method";
     private final String APPS_EVENT_CHANNEL = "me.efesser.flauncher/event_apps";
     private final String NETWORK_EVENT_CHANNEL = "me.efesser.flauncher/event_network";
+    private final String INPUT_DEVICES_EVENT_CHANNEL = "me.efesser.flauncher/event_input_devices";
+    static final String EXTRA_TOGGLE_LAYOUT = "toggle_layout";
+    static final String EXTRA_OPEN_SETTINGS = "open_settings";
+    static final String EXTRA_SETTINGS_ROUTE = "settings_route";
+
+    private MethodChannel methodChannel;
 
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine flutterEngine)
@@ -66,7 +72,8 @@ public class MainActivity extends FlutterActivity
 
         BinaryMessenger messenger = flutterEngine.getDartExecutor().getBinaryMessenger();
 
-        new MethodChannel(messenger, METHOD_CHANNEL).setMethodCallHandler((call, result) -> {
+        methodChannel = new MethodChannel(messenger, METHOD_CHANNEL);
+        methodChannel.setMethodCallHandler((call, result) -> {
             switch (call.method)
             {
                 case "getApplications" -> result.success(getApplications());
@@ -75,6 +82,7 @@ public class MainActivity extends FlutterActivity
                 case "applicationExists" -> result.success(applicationExists(call.arguments()));
                 case "launchActivityFromAction" -> result.success(launchActivityFromAction(call.arguments()));
                 case "launchApp" -> result.success(launchApp(call.arguments()));
+                case "launchAppWindowed" -> result.success(launchAppWindowed(call.arguments()));
                 case "openSettings" -> result.success(openSettings());
                 case "openAppInfo" -> result.success(openAppInfo(call.arguments()));
                 case "uninstallApp" -> result.success(uninstallApp(call.arguments()));
@@ -86,9 +94,29 @@ public class MainActivity extends FlutterActivity
                 case "setPasscode" -> result.success(startPinActivity(PinLockActivity.MODE_SET));
                 case "removePasscode" -> result.success(startPinActivity(PinLockActivity.MODE_REMOVE));
                 case "lockNow" -> result.success(startPinActivity(PinLockActivity.MODE_LOCK_NOW));
+                case "freeRam" -> {
+                    MemoryCleaner.clean(this);
+                    result.success(null);
+                }
                 case "isRemoteServiceRunning" -> result.success(RemoteKeyService.isRunning());
-                case "openAccessibilitySettings" -> result.success(launchActivityFromAction(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                case "setDesktopKeyboardPolicy" -> {
+                    result.success(KeyboardPolicy.apply(this, call.arguments()));
+                }
+                case "openAccessibilitySettings" -> result.success(tryStartActivity(SystemSettings.pageIntent("accessibility")));
+                case "getSystemSettings" -> result.success(SystemSettings.get(this));
+                case "setSystemSetting" -> result.success(SystemSettings.set(this, call.argument("key"), call.argument("value")));
+                case "openSystemSettingsPage" -> {
+                    Intent page = SystemSettings.pageIntent(call.arguments());
+                    result.success(page != null && tryStartActivity(page));
+                }
                 case "captureRemoteKey" -> captureRemoteKey(result);
+                case "hasStoragePermission" -> result.success(hasStoragePermission());
+                case "requestStoragePermission" -> {
+                    if (!hasStoragePermission()) {
+                        requestPermissions(new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+                    }
+                    result.success(null);
+                }
                 case "cancelRemoteKeyCapture" -> {
                     RemoteKeyService.cancelCapture();
                     result.success(null);
@@ -102,6 +130,9 @@ public class MainActivity extends FlutterActivity
 
         new EventChannel(messenger, NETWORK_EVENT_CHANNEL).setStreamHandler(
                 new NetworkEventStreamHandler(this));
+
+        new EventChannel(messenger, INPUT_DEVICES_EVENT_CHANNEL).setStreamHandler(
+                new InputDevicesStreamHandler(this));
     }
 
     private List<Map<String, Serializable>> getApplications() {
@@ -308,6 +339,7 @@ public class MainActivity extends FlutterActivity
     }
 
     private boolean launchApp(String packageName) {
+        boostIfHeavy(packageName);
         PackageManager packageManager = getPackageManager();
         Intent intent = packageManager.getLeanbackLaunchIntentForPackage(packageName);
 
@@ -316,6 +348,87 @@ public class MainActivity extends FlutterActivity
         }
 
         return tryStartActivity(intent);
+    }
+
+    private boolean launchAppFullscreen(String packageName) {
+        boostIfHeavy(packageName);
+        PackageManager packageManager = getPackageManager();
+        Intent intent = packageManager.getLeanbackLaunchIntentForPackage(packageName);
+        if (intent == null) {
+            intent = packageManager.getLaunchIntentForPackage(packageName);
+        }
+        if (intent == null) {
+            return false;
+        }
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        android.app.ActivityOptions options = android.app.ActivityOptions.makeBasic();
+        try {
+            // WINDOWING_MODE_FULLSCREEN; hidden API, so ignore it if the system refuses
+            android.app.ActivityOptions.class.getMethod("setLaunchWindowingMode", int.class).invoke(options, 1);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        }
+
+        try {
+            startActivity(intent, options.toBundle());
+            return true;
+        } catch (android.content.ActivityNotFoundException | SecurityException e) {
+            return false;
+        }
+    }
+
+    /** Frees memory for games such as Roblox while they start; the toast says how much. */
+    private void boostIfHeavy(String packageName) {
+        if (MemoryCleaner.isHeavy(this, packageName)) {
+            MemoryCleaner.clean(this, packageName);
+        }
+    }
+
+    private int windowCount = 0;
+
+    /**
+     * Opens an app in a resizable window (desktop mode). Needs freeform windows turned on:
+     * settings put global enable_freeform_support 1 (and a reboot). Falls back to full screen otherwise.
+     */
+    private boolean launchAppWindowed(String packageName) {
+        if (MemoryCleaner.isHeavy(this, packageName)) {
+            // Games run in a window run out of graphics memory (Roblox: OutOfMemoryGraphics), so they open full screen
+            return launchAppFullscreen(packageName);
+        }
+        PackageManager packageManager = getPackageManager();
+        Intent intent = packageManager.getLaunchIntentForPackage(packageName);
+        if (intent == null) {
+            intent = packageManager.getLeanbackLaunchIntentForPackage(packageName);
+        }
+        if (intent == null) {
+            return false;
+        }
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        // A window of about 3/4 of the screen, each new one shifted a little so they don't stack exactly.
+        // Kept inside the TV-safe area and above the desktop's taskbar.
+        android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
+        int width = metrics.widthPixels * 3 / 4;
+        int height = metrics.heightPixels * 7 / 10;
+        int step = metrics.widthPixels / 40;
+        int offset = (windowCount++ % 5) * step;
+        int left = (metrics.widthPixels - width) / 2 - 2 * step + offset;
+        int top = metrics.heightPixels / 16 + offset / 2;
+
+        android.app.ActivityOptions options = android.app.ActivityOptions.makeBasic();
+        options.setLaunchBounds(new android.graphics.Rect(left, top, left + width, top + height));
+        try {
+            // WINDOWING_MODE_FREEFORM; hidden API, so ignore it if the system refuses
+            android.app.ActivityOptions.class.getMethod("setLaunchWindowingMode", int.class).invoke(options, 5);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        }
+
+        try {
+            startActivity(intent, options.toBundle());
+            return true;
+        } catch (android.content.ActivityNotFoundException | SecurityException e) {
+            return false;
+        }
     }
 
     private boolean openSettings() {
@@ -356,6 +469,22 @@ public class MainActivity extends FlutterActivity
     }
 
     @Override
+    protected void onNewIntent(@NonNull Intent intent)
+    {
+        super.onNewIntent(intent);
+
+        // Sent by the "Switch TV / desktop" button action
+        if (intent.getBooleanExtra(EXTRA_TOGGLE_LAYOUT, false) && methodChannel != null) {
+            methodChannel.invokeMethod("toggleLayout", null);
+        }
+
+        // Sent by the "Settings" button action: open the launcher's settings, which include the TV settings
+        if (intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false) && methodChannel != null) {
+            methodChannel.invokeMethod("openSettings", intent.getStringExtra(EXTRA_SETTINGS_ROUTE));
+        }
+    }
+
+    @Override
     protected void onResume()
     {
         super.onResume();
@@ -379,6 +508,11 @@ public class MainActivity extends FlutterActivity
             key.put("name", KeyEvent.keyCodeToString(keyCode));
             result.success(key);
         });
+    }
+
+    private boolean hasStoragePermission()
+    {
+        return checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
     }
 
     private boolean startPinActivity(String mode)

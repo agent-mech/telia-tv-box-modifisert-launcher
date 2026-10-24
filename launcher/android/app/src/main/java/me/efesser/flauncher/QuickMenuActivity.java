@@ -226,11 +226,13 @@ public class QuickMenuActivity extends Activity {
             case "home" -> new Item("Home", icon(R.drawable.quick_menu_home), intent);
             case "settings" -> new Item("Settings", icon(R.drawable.quick_menu_settings), intent);
             case "wifi" -> new Item("Wi-Fi", icon(R.drawable.quick_menu_wifi), intent);
-            case "bluetooth" -> new Item("Bluetooth", icon(R.drawable.quick_menu_bluetooth), intent);
+            case "bluetooth" -> new Item("Remotes & accessories", icon(R.drawable.quick_menu_bluetooth), intent);
             case "display" -> new Item("Display & sound", icon(R.drawable.quick_menu_display), intent);
             case "apps" -> new Item("Manage apps", icon(R.drawable.quick_menu_apps), intent);
             case "screensaver" -> new Item("Screensaver", icon(R.drawable.quick_menu_screensaver), intent);
             case "lock" -> new Item("Lock TV", icon(R.drawable.quick_menu_lock), intent);
+            case "toggle_layout" -> new Item("Switch TV / desktop", icon(R.drawable.quick_menu_display), intent);
+            case "free_ram" -> new Item("Free up RAM", icon(R.drawable.quick_menu_memory), intent);
             default -> null;
         };
     }
@@ -239,14 +241,20 @@ public class QuickMenuActivity extends Activity {
     static Intent actionIntent(Context context, String id) {
         return switch (id) {
             case "home" -> new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
-            case "settings" -> new Intent(Settings.ACTION_SETTINGS);
-            case "wifi" -> new Intent(Settings.ACTION_WIFI_SETTINGS);
-            case "bluetooth" -> new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
-            case "display" -> new Intent(Settings.ACTION_DISPLAY_SETTINGS);
-            case "apps" -> new Intent(Settings.ACTION_APPLICATION_SETTINGS);
+            case "settings" -> new Intent(context, MainActivity.class)
+                    .putExtra(MainActivity.EXTRA_OPEN_SETTINGS, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            case "wifi" -> SystemSettings.pageIntent("network");
+            case "bluetooth" -> SystemSettings.pageIntent("accessories");
+            case "display" -> SystemSettings.pageIntent("display_sound");
+            case "apps" -> SystemSettings.pageIntent("apps");
             case "screensaver" -> new Intent(Intent.ACTION_MAIN).setClassName("com.android.systemui", "com.android.systemui.Somnambulator");
             case "lock" -> new Intent(context, PinLockActivity.class).putExtra(PinLockActivity.EXTRA_MODE, PinLockActivity.MODE_LOCK_NOW);
             case "quickmenu" -> new Intent(context, QuickMenuActivity.class);
+            case "free_ram" -> new Intent(context, MemoryCleaner.Action.class);
+            case "toggle_layout" -> new Intent(context, MainActivity.class)
+                    .putExtra(MainActivity.EXTRA_TOGGLE_LAYOUT, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             default -> null;
         };
     }

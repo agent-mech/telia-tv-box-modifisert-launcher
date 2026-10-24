@@ -46,6 +46,7 @@ public class RemoteKeyService extends AccessibilityService implements SharedPref
     private static IntConsumer captureCallback;
 
     private final Map<Integer, String> mappings = new HashMap<>();
+    private boolean spotlightComboUsed;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private SharedPreferences preferences;
 
@@ -116,6 +117,26 @@ public class RemoteKeyService extends AccessibilityService implements SharedPref
     protected boolean onKeyEvent(KeyEvent event) {
         int keyCode = event.getKeyCode();
 
+        // Cmd/Windows + Space opens Spotlight search from anywhere. The Cmd release after it is
+        // swallowed too, so the desktop doesn't also treat it as a Cmd tap (start menu).
+        if (keyCode == KeyEvent.KEYCODE_SPACE && event.isMetaPressed()) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0 && !PinStore.isLocked(this)) {
+                spotlightComboUsed = true;
+                handler.post(() -> {
+                    try {
+                        startActivity(new Intent(this, SpotlightActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    } catch (ActivityNotFoundException ignored) {
+                    }
+                });
+            }
+            return true;
+        }
+        if ((keyCode == KeyEvent.KEYCODE_META_LEFT || keyCode == KeyEvent.KEYCODE_META_RIGHT)
+                && event.getAction() == KeyEvent.ACTION_UP && spotlightComboUsed) {
+            spotlightComboUsed = false;
+            return true;
+        }
+
         IntConsumer capture = captureCallback;
         if (capture != null && !isProtected(keyCode)) {
             if (event.getAction() == KeyEvent.ACTION_UP) {
@@ -125,7 +146,18 @@ public class RemoteKeyService extends AccessibilityService implements SharedPref
             return true;
         }
 
-        String action = mappings.get(keyCode);
+        // The Telia remote's MITT INNHOLD button sends DVR; unless remapped it switches TV / desktop layout
+        String action = mappings.getOrDefault(keyCode,
+                keyCode == KeyEvent.KEYCODE_DVR ? "action:toggle_layout" : null);
+
+        // Keyboard Esc acts as the Back button, unless the user mapped it to something else
+        if (action == null && keyCode == KeyEvent.KEYCODE_ESCAPE) {
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                handler.post(() -> performGlobalAction(GLOBAL_ACTION_BACK));
+            }
+            return true;
+        }
+
         // Mappings are paused while the TV is locked so they can't be used to get past the passcode
         if (action == null || isProtected(keyCode) || PinStore.isLocked(this)) {
             return false;

@@ -67,6 +67,7 @@ This:
 - makes it the home screen
 - makes it the box's "assistant", so the Google Assistant button on the remote opens the Quick Menu
 - lets the passcode screen appear when the box wakes from standby (the `SYSTEM_ALERT_WINDOW` app-op)
+- lets desktop mode hide the on-screen keyboard (`WRITE_SECURE_SETTINGS`) and the TV settings page change text size and screensaver delay (the `WRITE_SETTINGS` app-op)
 - turns on the **remote buttons** service. It is an accessibility service, which is the only way Android lets an app remap remote buttons without root. It only looks at button presses; nothing is stored or sent anywhere. You can also turn it on yourself under **Settings → Device Preferences → Accessibility → Volt Launcher remote buttons**.
 
 ## Step 3 – Remove the bloat
@@ -104,9 +105,16 @@ Open settings with the **gear icon** in the top-right corner of the home screen.
 | **Remote buttons** | **Add button** → press a button on the remote → choose what it does. Select a mapping to change or remove it. |
 | **Sections** | Reorder, rename or add rows; switch between row and grid layout |
 | **Applications** | Add apps to sections or hide them |
-| **Wallpaper** | Gradient or your own picture |
+| **Wallpaper** | Gradient, a built-in wallpaper or your own picture |
+| **TV settings** | The Android TV settings (volume, screensaver, sleep, text size, …) inside the launcher's settings |
+| **Desktop mode** | Automatic (when a keyboard or mouse is connected), always or never |
+| **Desktop size** | How large the desktop is drawn |
 
 **Remote buttons:** the arrow keys, OK, Back and Power can't be remapped, so the remote can always navigate. Mappings are paused while the TV is locked, so they can't be used to get past the passcode. The assistant button is handled by the system before apps see it; it opens the Quick Menu instead.
+
+**Free up RAM:** the chip icon next to the lock stops apps that sit idle in the background and shows how much memory it freed. It never stops the app in front, music playing in the background or the keyboard. It is also available in the Quick Menu and as a remote button action. Games (Roblox, and apps that declare themselves as games) get the same clean-up automatically as they start.
+
+**Desktop mode:** plug in a mouse or keyboard and the home screen turns into a ChromeOS-style desktop: a floating shelf with pinned apps, a launcher bubble with search (or just start typing, or tap Cmd/Windows), and a quick settings bubble behind the clock (Wi-Fi, Bluetooth, Free up RAM, display, launcher and app settings). Cmd/Windows + Space opens Spotlight search from anywhere. Apps open in windows if freeform windows are turned on: `adb shell settings put global enable_freeform_support 1`, then reboot. Games always open full screen, since in a window they run out of graphics memory on this box.
 
 **Locking:** with a passcode set, the TV locks when it starts and every time it wakes from standby. To lock it right away, press the **lock icon** next to the gear, or add **Lock TV** to the Quick Menu. You enter the code with the remote's number keys or the on-screen keypad.
 
@@ -154,6 +162,13 @@ The release build is signed with the Android debug key so anyone can build it. I
 - `lib/widgets/focus_aware_app_bar.dart`: lock button next to the settings gear
 - `lib/gradients.dart`: "Volt Night" default background
 - `lib/providers/apps_service.dart`: new apps are added to the home screen automatically, and the launcher hides its own tile
+- `lib/widgets/app_card.dart`, `apps_grid.dart`, `category_row.dart`: Apple TV style tiles (rounded corners, lift with a deep shadow and a glossy sheen, the app name under the focused tile)
+- `lib/widgets/desktop/` and `lib/launcher_home.dart`: ChromeOS-style desktop mode
+- `android/…/InputDevicesStreamHandler.java`, `KeyboardPolicy.java`, `NoKeyboardInputMethod.java`: mouse/keyboard detection and no on-screen keyboard in desktop mode
+- `android/…/SpotlightActivity.java`: Spotlight search
+- `android/…/SystemSettings.java` and `lib/widgets/settings/tv_settings_panel_page.dart`: TV settings inside the launcher
+- `android/…/MemoryCleaner.java`: Free up RAM and the automatic clean-up for games
+- `assets/wallpapers/` (made with `tool/generate_wallpapers.py`): built-in wallpapers
 
 ## Credits and license
 
