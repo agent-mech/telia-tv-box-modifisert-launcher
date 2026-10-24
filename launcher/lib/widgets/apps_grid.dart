@@ -50,7 +50,8 @@ class AppsGrid extends StatelessWidget
         primary: false,
         shrinkWrap: true,
         gridDelegate: _buildSliverGridDelegate(),
-        padding: EdgeInsets.all(16),
+        clipBehavior: Clip.none,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
         childrenDelegate: SliverChildBuilderDelegate(
           childCount: applications.length,
           findChildIndexCallback: _findChildIndex,
@@ -79,7 +80,8 @@ class AppsGrid extends StatelessWidget
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge!
-                      .copyWith(shadows: [const Shadow(color: Colors.black54, offset: Offset(1, 1), blurRadius: 8)])
+                      .copyWith(fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.85),
+                          shadows: [const Shadow(color: Colors.black54, offset: Offset(1, 1), blurRadius: 8)])
                 ),
               );
             }
@@ -136,8 +138,9 @@ class AppsGrid extends StatelessWidget
   SliverGridDelegate _buildSliverGridDelegate() => SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: category.columnsCount,
         childAspectRatio: 16 / 9,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
+        // Room for the focused app's name under each row
+        mainAxisSpacing: 56,
+        crossAxisSpacing: 32,
       );
 
 }

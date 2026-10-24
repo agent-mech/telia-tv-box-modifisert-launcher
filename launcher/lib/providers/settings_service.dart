@@ -38,6 +38,15 @@ const _showGreeting = "show_greeting";
 const _quickMenuItems = "quick_menu_items";
 // Read natively by RemoteKeyService: "keyCode|keyName|action" entries joined by ";"
 const _remoteMappings = "remote_mappings";
+const _timeOfDayWallpaper = "time_of_day_wallpaper";
+// New key: the old one was also written by the TV/desktop switch button, which is now temporary
+const _desktopMode = "desktop_mode_setting";
+const _screenMargin = "screen_margin";
+const _desktopScale = "desktop_scale";
+
+const DESKTOP_MODE_AUTO = "auto";
+const DESKTOP_MODE_ALWAYS = "always";
+const DESKTOP_MODE_NEVER = "never";
 
 class SettingsService extends ChangeNotifier {
   static final defaultDateFormat = "EEEE d";
@@ -70,6 +79,17 @@ class SettingsService extends ChangeNotifier {
   String get greetingName => _sharedPreferences.getString(_greetingName) ?? defaultGreetingName;
 
   bool get showGreeting => _sharedPreferences.getBool(_showGreeting) ?? true;
+
+  /// "auto" switches to the desktop layout when a keyboard or mouse is connected
+  String get desktopMode => _sharedPreferences.getString(_desktopMode) ?? DESKTOP_MODE_AUTO;
+
+  /// Fraction of the screen kept empty on each side, for TVs that crop the edges (overscan)
+  double get screenMargin => _sharedPreferences.getDouble(_screenMargin) ?? 0;
+
+  /// How large the desktop layout is drawn; below 1 fits more on screen
+  double get desktopScale => _sharedPreferences.getDouble(_desktopScale) ?? 0.75;
+
+  bool get timeOfDayWallpaper => _sharedPreferences.getBool(_timeOfDayWallpaper) ?? false;
 
   List<({int code, String name, String action})> get remoteMappings =>
       (_sharedPreferences.getString(_remoteMappings) ?? "")
@@ -138,6 +158,25 @@ class SettingsService extends ChangeNotifier {
   Future<void> setGreetingName(String value) async {
     await _sharedPreferences.setString(_greetingName, value);
     notifyListeners();
+  }
+
+  Future<void> setDesktopScale(double scale) async {
+    await _sharedPreferences.setDouble(_desktopScale, scale);
+    notifyListeners();
+  }
+
+  Future<void> setScreenMargin(double margin) async {
+    await _sharedPreferences.setDouble(_screenMargin, margin);
+    notifyListeners();
+  }
+
+  Future<void> setDesktopMode(String mode) async {
+    await _sharedPreferences.setString(_desktopMode, mode);
+    notifyListeners();
+  }
+
+  Future<void> setTimeOfDayWallpaper(bool enabled) async {
+    return set(_timeOfDayWallpaper, enabled);
   }
 
   Future<void> setShowGreeting(bool show) async {

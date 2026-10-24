@@ -33,12 +33,14 @@ class _RemoteButtonsPanelPageState extends State<RemoteButtonsPanelPage> with Wi
   // Ids must match RemoteKeyService.perform / QuickMenuActivity.actionIntent on the Android side
   static const List<(String, String)> _actions = [
     ("action:quickmenu", "Quick menu"),
+    ("action:toggle_layout", "Switch TV / desktop layout"),
     ("action:home", "Home"),
     ("action:back", "Back"),
     ("action:lock", "Lock TV"),
+    ("action:free_ram", "Free up RAM"),
     ("action:settings", "Settings"),
     ("action:wifi", "Wi-Fi"),
-    ("action:bluetooth", "Bluetooth"),
+    ("action:bluetooth", "Remotes & accessories"),
     ("action:display", "Display & sound"),
     ("action:screensaver", "Screensaver"),
     ("action:none", "Do nothing (disable button)"),
@@ -227,7 +229,8 @@ class _RemoteButtonsPanelPageState extends State<RemoteButtonsPanelPage> with Wi
     );
   }
 
-  String _keyLabel(String keyName) => keyName
+  // The Telia remote's MITT INNHOLD button sends DVR
+  String _keyLabel(String keyName) => keyName == "KEYCODE_DVR" ? "Mitt innhold" : keyName
       .replaceFirst("KEYCODE_", "")
       .split("_")
       .map((word) => word.isEmpty ? word : word[0] + word.substring(1).toLowerCase())

@@ -44,9 +44,13 @@ class CategoryRow extends StatelessWidget
       categoryContent = categoryContainerEmptyState(context);
     }
     else {
-      categoryContent = SizedBox(
+      // Room for the focused app's name under the row
+      categoryContent = Padding(
+        padding: const EdgeInsets.only(bottom: 40),
+        child: SizedBox(
         height: category.rowHeight.toDouble(),
         child: ListView.custom(
+          clipBehavior: Clip.none,
           padding: const EdgeInsets.all(8),
           scrollDirection: Axis.horizontal,
           childrenDelegate: SliverChildBuilderDelegate(
@@ -54,7 +58,7 @@ class CategoryRow extends StatelessWidget
             findChildIndexCallback: _findChildIndex,
             (context, index) => Padding(
                 key: Key(applications[index].packageName),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: AppCard(
                   category: category,
                   application: applications[index],
@@ -64,6 +68,7 @@ class CategoryRow extends StatelessWidget
                 )
             )
           )
+        )
         )
       );
     }
@@ -81,7 +86,8 @@ class CategoryRow extends StatelessWidget
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge!
-                      .copyWith(shadows: [const Shadow(color: Colors.black54, offset: Offset(1, 1), blurRadius: 8)])
+                      .copyWith(fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.85),
+                          shadows: [const Shadow(color: Colors.black54, offset: Offset(1, 1), blurRadius: 8)])
                 ),
               );
             }

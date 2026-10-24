@@ -27,6 +27,8 @@ import 'package:flauncher/widgets/settings/wallpaper_panel_page.dart';
 import 'package:flauncher/widgets/settings/passcode_panel_page.dart';
 import 'package:flauncher/widgets/settings/quick_menu_panel_page.dart';
 import 'package:flauncher/widgets/settings/remote_buttons_panel_page.dart';
+import 'package:flauncher/widgets/settings/wallpaper_images_panel_page.dart';
+import 'package:flauncher/widgets/settings/tv_settings_panel_page.dart';
 import 'package:flutter/material.dart';
 
 class SettingsPanel extends StatefulWidget {
@@ -59,6 +61,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 return MaterialPageRoute(builder: (_) => WallpaperPanelPage());
               case StatusBarPanelPage.routeName:
                 return MaterialPageRoute(builder: (_) => StatusBarPanelPage());
+              case TvSettingsPanelPage.routeName:
+                return MaterialPageRoute(builder: (_) => TvSettingsPanelPage());
               case QuickMenuPanelPage.routeName:
                 return MaterialPageRoute(builder: (_) => QuickMenuPanelPage());
               case PasscodePanelPage.routeName:
@@ -67,6 +71,8 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 return MaterialPageRoute(builder: (_) => RemoteButtonsPanelPage());
               case GradientPanelPage.routeName:
                 return MaterialPageRoute(builder: (_) => GradientPanelPage());
+              case WallpaperImagesPanelPage.routeName:
+                return MaterialPageRoute(builder: (_) => WallpaperImagesPanelPage());
               case ApplicationsPanelPage.routeName:
                 return MaterialPageRoute(builder: (_) => ApplicationsPanelPage());
               case LauncherSectionsPanelPage.routeName:

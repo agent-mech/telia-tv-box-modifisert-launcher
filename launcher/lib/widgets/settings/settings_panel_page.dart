@@ -27,6 +27,7 @@ import 'package:flauncher/widgets/settings/passcode_panel_page.dart';
 import 'package:flauncher/widgets/settings/quick_menu_panel_page.dart';
 import 'package:flauncher/widgets/settings/remote_buttons_panel_page.dart';
 import 'package:flauncher/widgets/settings/status_bar_panel_page.dart';
+import 'package:flauncher/widgets/settings/tv_settings_panel_page.dart';
 import 'package:flauncher/widgets/settings/wallpaper_panel_page.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -57,6 +58,20 @@ class SettingsPanelPage extends StatelessWidget {
                     alignment: 0.5,
                     child: TextButton(
                       autofocus: true,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.tv),
+                          Container(width: 8),
+                          Text("TV settings", style: Theme.of(context).textTheme.bodyMedium),
+                        ],
+                      ),
+                      onPressed: () => Navigator.of(context).pushNamed(TvSettingsPanelPage.routeName),
+                    ),
+                  ),
+                  const Divider(),
+                  EnsureVisible(
+                    alignment: 0.5,
+                    child: TextButton(
                       child: Row(
                         children: [
                           const Icon(Icons.apps),
@@ -120,23 +135,52 @@ class SettingsPanelPage extends StatelessWidget {
                   TextButton(
                     child: Row(
                       children: [
+                        const Icon(Icons.fit_screen_outlined),
+                        Container(width: 8),
+                        Expanded(child: Text("Screen margins", style: Theme.of(context).textTheme.bodyMedium)),
+                        Text(settingsService.screenMargin == 0
+                            ? "None"
+                            : "${(settingsService.screenMargin * 100).toStringAsFixed(1).replaceAll('.0', '')}%",
+                            style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
+                    onPressed: () async => await _screenMarginDialog(context),
+                  ),
+                  TextButton(
+                    child: Row(
+                      children: [
+                        const Icon(Icons.desktop_windows_outlined),
+                        Container(width: 8),
+                        Expanded(child: Text("Desktop mode", style: Theme.of(context).textTheme.bodyMedium)),
+                        Text(switch (settingsService.desktopMode) {
+                          DESKTOP_MODE_ALWAYS => "Always",
+                          DESKTOP_MODE_NEVER => "Never",
+                          _ => "Automatic",
+                        }, style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
+                    onPressed: () async => await _desktopModeDialog(context),
+                  ),
+                  TextButton(
+                    child: Row(
+                      children: [
+                        const Icon(Icons.zoom_out_map),
+                        Container(width: 8),
+                        Expanded(child: Text("Desktop size", style: Theme.of(context).textTheme.bodyMedium)),
+                        Text("${(settingsService.desktopScale * 100).round()}%", style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
+                    onPressed: () async => await _desktopScaleDialog(context),
+                  ),
+                  TextButton(
+                    child: Row(
+                      children: [
                         const Icon(Icons.settings_remote_outlined),
                         Container(width: 8),
                         Text("Remote buttons", style: Theme.of(context).textTheme.bodyMedium),
                       ],
                     ),
                     onPressed: () => Navigator.of(context).pushNamed(RemoteButtonsPanelPage.routeName),
-                  ),
-                  const Divider(),
-                  TextButton(
-                    child: Row(
-                      children: [
-                        const Icon(Icons.settings_outlined),
-                        Container(width: 8),
-                        Text(localizations.systemSettings, style: Theme.of(context).textTheme.bodyMedium),
-                      ],
-                    ),
-                    onPressed: () => context.read<AppsService>().openSettings(),
                   ),
                   const Divider(),
                   TextButton(
@@ -249,6 +293,79 @@ class SettingsPanelPage extends StatelessWidget {
 
     if (newAction != null) {
       await service.setBackButtonAction(newAction);
+    }
+  }
+
+  Future<void> _screenMarginDialog(BuildContext context) async {
+    SettingsService service = context.read<SettingsService>();
+
+    final margin = await showDialog<double>(
+        context: context,
+        builder: (context) => SimpleDialog(
+            title: Text("Screen margins"),
+            children: [
+              for (final (value, label) in [(0.0, "None"), (0.02, "Small (2%)"), (0.035, "Medium (3.5%)"), (0.05, "Large (5%)")])
+                SimpleDialogOption(
+                  child: Text(label),
+                  onPressed: () => Navigator.pop(context, value),
+                ),
+            ]
+        )
+    );
+
+    if (margin != null) {
+      await service.setScreenMargin(margin);
+    }
+  }
+
+  Future<void> _desktopModeDialog(BuildContext context) async {
+    SettingsService service = context.read<SettingsService>();
+
+    final mode = await showDialog<String>(
+        context: context,
+        builder: (context) => SimpleDialog(
+            title: Text("Desktop mode"),
+            children: [
+              SimpleDialogOption(
+                child: Text("Automatic (when a keyboard or mouse is connected)"),
+                onPressed: () => Navigator.pop(context, DESKTOP_MODE_AUTO),
+              ),
+              SimpleDialogOption(
+                child: Text("Always"),
+                onPressed: () => Navigator.pop(context, DESKTOP_MODE_ALWAYS),
+              ),
+              SimpleDialogOption(
+                child: Text("Never"),
+                onPressed: () => Navigator.pop(context, DESKTOP_MODE_NEVER),
+              ),
+            ]
+        )
+    );
+
+    if (mode != null) {
+      await service.setDesktopMode(mode);
+    }
+  }
+
+  Future<void> _desktopScaleDialog(BuildContext context) async {
+    SettingsService service = context.read<SettingsService>();
+
+    final scale = await showDialog<double>(
+        context: context,
+        builder: (context) => SimpleDialog(
+            title: Text("Desktop size"),
+            children: [
+              for (final (value, label) in [(1.0, "Large (100%)"), (0.85, "Medium (85%)"), (0.75, "Small (75%)"), (0.65, "Smaller (65%)")])
+                SimpleDialogOption(
+                  child: Text(label),
+                  onPressed: () => Navigator.pop(context, value),
+                ),
+            ]
+        )
+    );
+
+    if (scale != null) {
+      await service.setDesktopScale(scale);
     }
   }
 

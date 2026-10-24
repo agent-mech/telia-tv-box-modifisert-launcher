@@ -33,6 +33,10 @@ import '../models/category.dart';
 
 const _validationKeys = [LogicalKeyboardKey.select, LogicalKeyboardKey.enter, LogicalKeyboardKey.gameButtonA];
 
+// Apple TV style tiles: rounded corners, a lift with a deep shadow and the app name under the focused tile
+const double _radius = 14;
+const double _focusedScale = 1.12;
+
 class AppCard extends StatefulWidget
 {
   final App application;
@@ -63,7 +67,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
     lowerBound: 0,
     upperBound: 255,
     duration: const Duration(
-      milliseconds: 800,
+      milliseconds: 2400,
     ),
   );
 
@@ -90,18 +94,27 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
       builder: (context) {
         final bool shouldHighlight = _shouldHighlight(context);
 
-        return AspectRatio(
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+          AspectRatio(
           aspectRatio: 16 / 9,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
             transformAlignment: Alignment.center,
             transform: _scaleTransform(context),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(_radius),
+              boxShadow: [
+                shouldHighlight
+                    ? const BoxShadow(color: Colors.black54, blurRadius: 32, offset: Offset(0, 20))
+                    : const BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
+              ],
+            ),
             child: Material(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(_radius),
               clipBehavior: Clip.antiAlias,
-              elevation: shouldHighlight ? 16 : 0,
-              shadowColor: Colors.black,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -128,32 +141,28 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
 
                   ),
                   if (_moving) ..._arrows(),
-                  IgnorePointer(
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOut,
-                      opacity: shouldHighlight ? 0 : 0.10,
-                      child: Container(color: Colors.black),
-                    ),
-                  ),
                   Selector<SettingsService, bool>(
                     selector: (_, settingsService) => settingsService.appHighlightAnimationEnabled && shouldHighlight,
                     builder: (context, highlight, _) {
                       if (highlight) {
                         _animation.repeat(reverse: true);
+                        // A soft glossy sheen that drifts across the focused tile
                         return AnimatedBuilder(
                           animation: _animation,
-                          builder: (context, child) => IgnorePointer(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.white.withAlpha(_animation.value.round()),
-                                  width: 3
+                          builder: (context, child) {
+                            final position = _animation.value / 255 * 2 - 1;
+                            return IgnorePointer(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment(position - 1.2, -1),
+                                    end: Alignment(position + 1.2, 1),
+                                    colors: [Colors.white.withOpacity(0), Colors.white.withOpacity(0.22), Colors.white.withOpacity(0)],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         );
                       }
 
@@ -165,6 +174,27 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
               ),
             ),
           ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: -36,
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: shouldHighlight && !_moving ? 1 : 0,
+                child: Text(
+                  widget.application.name,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 1))]),
+                ),
+              ),
+            ),
+          ),
+          ],
         );
       },
   );
@@ -268,7 +298,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
   Matrix4 _scaleTransform(BuildContext context) {
     double scale = 1.0;
     if (!_moving && _shouldHighlight(context)) {
-      scale = 1.1;
+      scale = _focusedScale;
     }
     return Matrix4.diagonal3Values(scale, scale, 1.0);
   }

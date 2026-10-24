@@ -16,8 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import 'dart:async';
 import 'dart:io';
 
+import 'package:flauncher/part_of_day.dart';
 import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/gradients.dart';
 import 'package:flauncher/providers/settings_service.dart';
@@ -34,7 +36,12 @@ class WallpaperService extends ChangeNotifier {
 
   ImageProvider? _wallpaper;
 
-  ImageProvider?  get wallpaper     => _wallpaper;
+  Timer? _periodTimer;
+  PartOfDay _period = PartOfDay.of(DateTime.now());
+
+  bool get timeOfDay => _settingsService.timeOfDayWallpaper;
+
+  ImageProvider?  get wallpaper     => timeOfDay ? AssetImage(_period.wallpaperAsset) : _wallpaper;
 
   FLauncherGradient get gradient => FLauncherGradients.all.firstWhere(
         (gradient) => gradient.uuid == _settingsService.gradientUuid,
@@ -48,6 +55,17 @@ class WallpaperService extends ChangeNotifier {
   }
 
   Future<void> _init() async {
+    // Switch the time-of-day wallpaper when the part of the day changes
+    _periodTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      final period = PartOfDay.of(DateTime.now());
+      if (period != _period) {
+        _period = period;
+        if (timeOfDay) {
+          notifyListeners();
+        }
+      }
+    });
+
     final directory = await getApplicationDocumentsDirectory();
     _wallpaperFile = File("${directory.path}/wallpaper");
     if (await _wallpaperFile.exists()) {
@@ -72,7 +90,29 @@ class WallpaperService extends ChangeNotifier {
     }
   }
 
+  /// Wallpaper follows the time of day (morning, afternoon, evening, night).
+  @override
+  void dispose() {
+    _periodTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> setTimeOfDay() async {
+    _period = PartOfDay.of(DateTime.now());
+    await _settingsService.setTimeOfDayWallpaper(true);
+    notifyListeners();
+  }
+
+  /// Sets a picture from the built-in wallpapers or the TV's own folders.
+  Future<void> setWallpaperBytes(Uint8List bytes) async {
+    await _settingsService.setTimeOfDayWallpaper(false);
+    await _wallpaperFile.writeAsBytes(bytes);
+    _wallpaper = MemoryImage(bytes);
+    notifyListeners();
+  }
+
   Future<void> setGradient(FLauncherGradient fLauncherGradient) async {
+    await _settingsService.setTimeOfDayWallpaper(false);
     if (await _wallpaperFile.exists()) {
       await _wallpaperFile.delete();
     }

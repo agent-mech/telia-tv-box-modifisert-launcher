@@ -18,13 +18,17 @@
 
 import 'dart:async';
 
+import 'package:flauncher/part_of_day.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class GreetingWidget extends StatefulWidget {
-  const GreetingWidget({super.key});
+  /// The desktop shows the time on the shelf instead
+  final bool showTime;
+
+  const GreetingWidget({super.key, this.showTime = true});
 
   @override
   State<GreetingWidget> createState() => _GreetingWidgetState();
@@ -52,36 +56,25 @@ class _GreetingWidgetState extends State<GreetingWidget> {
     super.dispose();
   }
 
-  String _greeting(int hour) {
-    if (hour >= 5 && hour < 12) {
-      return "Good morning";
-    }
-    if (hour >= 12 && hour < 17) {
-      return "Good afternoon";
-    }
-    if (hour >= 17 && hour < 22) {
-      return "Good evening";
-    }
-    return "Good night";
-  }
-
   @override
   Widget build(BuildContext context) => Selector<SettingsService, ({ String name, String timeFormat })>(
     selector: (_, service) => (name: service.greetingName.trim(), timeFormat: service.timeFormat),
     builder: (context, settings, _) {
       final greeting = settings.name.isEmpty
-          ? _greeting(_now.hour)
-          : "${_greeting(_now.hour)}, ${settings.name}";
+          ? PartOfDay.of(_now).greeting
+          : "${PartOfDay.of(_now).greeting}, ${settings.name}";
 
       return Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(DateFormat(settings.timeFormat).format(_now),
-              style: const TextStyle(fontSize: 72, fontWeight: FontWeight.w200, height: 1, color: Colors.white, shadows: _shadows)
-            ),
-            const SizedBox(height: 8),
+            if (widget.showTime) ...[
+              Text(DateFormat(settings.timeFormat).format(_now),
+                style: const TextStyle(fontSize: 72, fontWeight: FontWeight.w200, height: 1, color: Colors.white, shadows: _shadows)
+              ),
+              const SizedBox(height: 8),
+            ],
             Text(greeting,
               style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w500, color: Colors.white, shadows: _shadows)
             ),

@@ -33,6 +33,14 @@
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <!-- Lets the passcode screen open when the TV wakes, granted over adb with appops -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Lists your own pictures in Pictures/ and Download/ for the wallpaper gallery -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- Switches to the invisible keyboard in desktop mode, granted over adb with pm grant -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <!-- Text size and screensaver delay in the TV settings page (app op granted over adb) -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <!-- Window close button stops the app; "Free up RAM" stops background apps -->
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
 
     <queries>
         <intent>
@@ -83,6 +91,21 @@
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen" />
         <activity
+            android:name=".SpotlightActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:windowSoftInputMode="stateAlwaysVisible|adjustNothing"
+            android:theme="@style/QuickMenuTheme" />
+        <activity
+            android:name=".MemoryCleaner$Action"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay" />
+        <activity
             android:name=".QuickMenuActivity"
             android:exported="true"
             android:excludeFromRecents="true"
@@ -105,6 +128,18 @@
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/remote_key_service" />
+        </service>
+        <service
+            android:name=".NoKeyboardInputMethod"
+            android:exported="true"
+            android:label="Volt desktop (no on-screen keyboard)"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/no_keyboard_method" />
         </service>
         <meta-data
             android:name="flutterEmbedding"
